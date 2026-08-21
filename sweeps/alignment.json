@@ -1,0 +1,108 @@
+{
+  "name": "alignment",
+  "note": "Alignment variants, architecture held fixed. Two have never been run anywhere: session-local referencing (the only published measurement on that axis reports a stale reference costing up to 5.9 points and sometimes leaving alignment worse than none) and shrinkage-regularized references. Riemannian alignment is validated-correct here and reported above Euclidean in the literature, but has never been measured in this harness. THREE COHORTS ON PURPOSE: cho2017 is single-session, so the session-local arm there is a no-op and serves only as an assertion that the code path does not move when there is nothing to move; the experiment itself needs bnci2014_004 (5 sessions) and bnci2014_001 (2), which are where a stale reference can actually cost something. Read euclid_session on cho2017 as a control, never as a result.",
+  "base": {
+    "datasets": [
+      "cho2017"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "regime": "transductive",
+    "norm": "per-subject",
+    "arm": "ours_noattn",
+    "arm_cfg": {
+      "spatial_filter": 88,
+      "kernel_size": 32,
+      "branch2_stride": 1,
+      "norm": "batch"
+    },
+    "epochs": 150,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "align": "euclid",
+    "align_scope": "subject",
+    "align_shrinkage": 0.0
+  },
+  "datasets": [
+    [
+      "cho2017"
+    ],
+    [
+      "bnci2014_004"
+    ],
+    [
+      "bnci2014_001"
+    ]
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "folds": 10,
+  "overridable": [
+    "align",
+    "align_scope",
+    "align_shrinkage",
+    "norm"
+  ],
+  "arms": [
+    {
+      "name": "none",
+      "flags": {
+        "align": "none",
+        "norm": "per-subject"
+      },
+      "prediction": "z-scoring only. Equalizes each electrode's scale and leaves the covariance structure -- which is what differs between people -- untouched."
+    },
+    {
+      "name": "euclid",
+      "flags": {
+        "align": "euclid"
+      },
+      "prediction": "the reference alignment; the arm every other row is paired against"
+    },
+    {
+      "name": "euclid_session",
+      "flags": {
+        "align": "euclid",
+        "align_scope": "session"
+      },
+      "prediction": "THE arm this sweep exists for. On bnci2014_004 (5 sessions) and bnci2014_001 (2), expect a gain: impedance drift, cap placement and gel move the covariance between sessions, so a subject-pooled reference averages over conditions that never co-occur at inference. On cho2017 (1 session) it MUST be identical to `euclid` -- if it is not, the session labels are wrong, and that is the finding."
+    },
+    {
+      "name": "euclid_shrunk",
+      "flags": {
+        "align": "euclid",
+        "align_shrinkage": "auto"
+      },
+      "prediction": "flat at full data. Shrinkage trades bias for variance, and with a full test set in hand there is little variance to trade against -- its payoff should appear only in the few-trial regimes of sweeps/zeroshot.json."
+    },
+    {
+      "name": "riemann",
+      "flags": {
+        "align": "riemann"
+      },
+      "prediction": "small gain over euclid. Covariances live on the SPD manifold where the arithmetic mean is a first-order approximation biased toward high-variance trials; the literature reports RA above EA. Costs ~2.4x EA in preprocessing."
+    },
+    {
+      "name": "riemann_shrunk",
+      "flags": {
+        "align": "riemann",
+        "align_shrinkage": "auto"
+      },
+      "prediction": ""
+    },
+    {
+      "name": "euclid_nozscore",
+      "flags": {
+        "align": "euclid",
+        "norm": "none"
+      },
+      "prediction": "isolates how much of the aligned arm's benefit is the alignment versus the z-score stacked on top of it. Never run separately anywhere."
+    }
+  ]
+}

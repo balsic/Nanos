@@ -1,0 +1,51 @@
+{
+  "name": "reshape",
+  "note": "THE CONFIGURATION THAT HAS NEVER BEEN RUN. Everything measured so far -- ours 70.67 vs EEGNet 72.26, a tie at p=0.70 corrected -- was measured on the trunk's PUBLISHED SHAPE: pool hops by 1, so attention receives 690 tokens whose adjacent cosine is 0.987, i.e. a ~99% redundant sequence. Every architecture that beats this trunk hands its attention 13-61 tokens (ATCNet 13, CTNet 15, MSVTNet 18, Conformer 61). The trunk is also depth-1 per branch where all of them are deeper. Those two facts are one change: decimating the trunk is what makes depth and real attention affordable. This sweep walks from the current shape to that shape ONE FACTOR AT A TIME so a regression is attributable, which the prior harness never did -- it changed several at once and got +0.04. Verified [here] that the chain builds and produces the intended token counts: 565 -> 74 (pool_stride 8) -> 10 (stage-2 k15/pool7). NOTE the honest prior against enthusiasm: attention was measured at -6.79 (p=0.0117) on 288 trials and only mildly positive (+0.55, 5/10, p=0.68) at 52 subjects, ALWAYS on 690 tokens. It has never once been given a short sequence. That is the untested hypothesis, not 'transformers are good'.",
+  "base": {
+    "datasets": ["cho2017"],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0,
+    "folds": 10
+  },
+  "datasets": [["cho2017"]],
+  "seeds": [0],
+  "folds": 10,
+  "overridable": ["arm", "arm_cfg"],
+  "arms": [
+    {"name": "base", "flags": {"arm": "ours_noattn", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1}},
+     "prediction": "the published shape, 565 tokens. Already measured at 70.67; re-run here so the ladder is internally paired rather than cross-referenced."},
+
+    {"name": "decim", "flags": {"arm": "ours_noattn", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "pool_kernel": 8, "pool_stride": 8}},
+     "prediction": "565 -> 74 tokens. Tests the redundancy finding directly. If accuracy is FLAT, ~87% of the trunk's output was duplicate and everything below becomes affordable. If it drops materially, the sliding pool was doing real work and the ladder stops here."},
+
+    {"name": "deep", "flags": {"arm": "ours_noattn", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "pool_kernel": 8, "pool_stride": 8, "stage2_kernel": 15, "stage2_pool": 7}},
+     "prediction": "74 -> 10 tokens, plus the second depthwise temporal stage every architecture that beats us has and we lack. +1 to +2.5 over decim. Depthwise on purpose, so feature_channel_index stays exact."},
+
+    {"name": "deep_attn", "flags": {"arm": "ours", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "pool_kernel": 8, "pool_stride": 8, "stage2_kernel": 15, "stage2_pool": 7}},
+     "prediction": "THE ARM THIS SWEEP EXISTS FOR. Identical to `deep` with the gated attention block ON, over 10 tokens instead of 690. Attention has never been given a sequence short enough to be worth its parameter count. If the -6.79 and +0.55 results were about sequence length rather than about attention, this is where it shows. Falsified if it lands at or below `deep`."},
+
+    {"name": "deep_ms", "flags": {"arm": "ours_noattn", "arm_cfg": {"channels_per_group": 1, "kernel_sizes": [15, 31, 63, 125], "same_padding": true, "norm": "batch", "spatial_filter": 88, "branch2_stride": 1, "pool_kernel": 8, "pool_stride": 8, "stage2_kernel": 15, "stage2_pool": 7}},
+     "prediction": "the full MSVTNet-shaped trunk: 4 explicit scales, normalization, decimation, depth. Multi-scale alone was -0.47 on the UNDECIMATED shape; the question is whether it pays once the sequence is short."},
+
+    {"name": "deep_ms_attn", "flags": {"arm": "ours", "arm_cfg": {"channels_per_group": 1, "kernel_sizes": [15, 31, 63, 125], "same_padding": true, "norm": "batch", "spatial_filter": 88, "branch2_stride": 1, "pool_kernel": 8, "pool_stride": 8, "stage2_kernel": 15, "stage2_pool": 7}},
+     "prediction": "everything at once -- reported LAST and read only against deep_ms, never against base, because a combination arm cannot attribute anything on its own."},
+
+    {"name": "msvtnet", "flags": {"arm": "msvtnet", "arm_cfg": {}},
+     "prediction": "the architecture we are imitating, in-sweep so the ladder can be read without cross-referencing another results directory. It beat this trunk by +2.91 (10/10, p=0.0020) [prior]."},
+
+    {"name": "eegnet", "flags": {"arm": "eegnet", "arm_cfg": {}},
+     "prediction": "the standing reference; 72.26 in results/reference [here]."}
+  ]
+}

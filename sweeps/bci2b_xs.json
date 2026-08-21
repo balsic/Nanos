@@ -1,0 +1,159 @@
+{
+  "name": "bci2b_xs",
+  "note": "BCI IV 2b (bnci2014_004): 9 subjects, 6,520 trials, and only THREE electrodes -- C3, Cz, C4. Two things make it worth a cell of its own. (1) It is the extreme test of the spatial mixer: with 3 inputs a C->88 dense mix is 29x over-complete, so if the mixer is the component that encodes subject identity, this is where it should hurt most. (2) It is the only corpus here with 5 sessions per subject, which is the one place the session-local alignment question can actually be asked. 2-class, so chance is 50%.",
+  "base": {
+    "datasets": [
+      "bnci2014_004"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0,
+    "folds": 9
+  },
+  "datasets": [
+    [
+      "bnci2014_004"
+    ]
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "folds": 9,
+  "overridable": [
+    "arm",
+    "arm_cfg"
+  ],
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "the published trunk, as measured on Cho2017 [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "ours_decim",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "pool_kernel": 8,
+          "pool_stride": 8
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "decimated to ~74 tokens, no attention -- the control for the arm below [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "ours_decim_attn",
+      "flags": {
+        "arm": "ours",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "pool_kernel": 8,
+          "pool_stride": 8
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "the best configuration found on Cho2017 (71.94, +1.61 over its control). Replication target: attention should again be positive on a short sequence. This is the arm the token-budget claim lives or dies on -- a second dataset, second class count, second protocol. [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "ours_attn_565",
+      "flags": {
+        "arm": "ours",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "attention at the PUBLISHED token budget, so the difference-in-differences can be computed within this dataset rather than borrowed from Cho2017 [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "eegnet",
+      "flags": {
+        "arm": "eegnet",
+        "arm_cfg": {}
+      },
+      "prediction": "the reference [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "msvtnet",
+      "flags": {
+        "arm": "msvtnet",
+        "arm_cfg": {}
+      },
+      "prediction": "the strongest baseline on Cho2017 [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "shallow",
+      "flags": {
+        "arm": "shallow",
+        "arm_cfg": {}
+      },
+      "prediction": "mid-table [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "atcnet",
+      "flags": {
+        "arm": "atcnet",
+        "arm_cfg": {}
+      },
+      "prediction": "designed for this exact dataset; its published 2a number is best-epoch-on-test [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "ctnet",
+      "flags": {
+        "arm": "ctnet",
+        "arm_cfg": {}
+      },
+      "prediction": "mid-table [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "sccnet",
+      "flags": {
+        "arm": "sccnet",
+        "arm_cfg": {}
+      },
+      "prediction": "mid-table [2b: 3 electrodes, spatial_filter reduced to 24]"
+    },
+    {
+      "name": "null",
+      "flags": {
+        "arm": "eegnet",
+        "arm_cfg": {},
+        "null": true
+      },
+      "prediction": "must land inside the 4-class chance band (25%) [2b: 3 electrodes, spatial_filter reduced to 24]"
+    }
+  ]
+}

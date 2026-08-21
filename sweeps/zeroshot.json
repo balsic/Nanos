@@ -1,0 +1,120 @@
+{
+  "name": "zeroshot",
+  "note": "The regime curve: how much unlabelled target data does the model actually need? Every published cross-subject number in this literature sits at ONE point on this axis, almost always the loosest (`transductive`), and almost never says so. This sweep holds the architecture fixed and varies only the regime, so the x-axis is the deliverable. `regime` is declared overridable because varying it IS the experiment -- and every arm still pays the identical recipe otherwise.",
+  "base": {
+    "datasets": [
+      "cho2017"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "align_scope": "subject",
+    "align_shrinkage": "auto",
+    "norm": "per-subject",
+    "regime": "transductive",
+    "arm": "ours_noattn",
+    "arm_cfg": {
+      "spatial_filter": 88,
+      "kernel_size": 32,
+      "branch2_stride": 1,
+      "norm": "batch"
+    },
+    "epochs": 150,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final"
+  },
+  "datasets": [
+    [
+      "cho2017"
+    ]
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "folds": 10,
+  "overridable": [
+    "regime",
+    "align",
+    "test_time_bn"
+  ],
+  "arms": [
+    {
+      "name": "inductive",
+      "flags": {
+        "regime": "inductive",
+        "align": "none"
+      },
+      "prediction": "the floor, and the only literally zero-shot number here. Nothing from the target subject at all. Expect a large drop -- this is the quantity every 'calibration-free' claim is implicitly compared against and nobody reports."
+    },
+    {
+      "name": "inductive_srcalign",
+      "flags": {
+        "regime": "inductive",
+        "align": "euclid"
+      },
+      "prediction": "one reference estimated from the training pool and applied to the target. Isolates how much of alignment's benefit needs TARGET data versus merely needs a common reference frame."
+    },
+    {
+      "name": "calib1",
+      "flags": {
+        "regime": "calib:1"
+      },
+      "prediction": "one unlabelled trial; probably unstable even with shrinkage"
+    },
+    {
+      "name": "calib2",
+      "flags": {
+        "regime": "calib:2"
+      },
+      "prediction": ""
+    },
+    {
+      "name": "calib5",
+      "flags": {
+        "regime": "calib:5"
+      },
+      "prediction": "the interesting point: if 5 unlabelled trials recover most of the transductive number, calibration-free operation is real and the deployment story is a 20-second recording."
+    },
+    {
+      "name": "calib10",
+      "flags": {
+        "regime": "calib:10"
+      },
+      "prediction": ""
+    },
+    {
+      "name": "calib20",
+      "flags": {
+        "regime": "calib:20"
+      },
+      "prediction": ""
+    },
+    {
+      "name": "calib50",
+      "flags": {
+        "regime": "calib:50"
+      },
+      "prediction": "expected to be within noise of transductive"
+    },
+    {
+      "name": "transductive",
+      "flags": {
+        "regime": "transductive"
+      },
+      "prediction": "the ceiling for this family, and what the literature usually reports as 'cross-subject'"
+    },
+    {
+      "name": "transductive_ttbn",
+      "flags": {
+        "regime": "transductive",
+        "test_time_bn": true
+      },
+      "prediction": "recomputing BatchNorm statistics on the target on TOP of alignment. Published gains for this measured it as an ALTERNATIVE to alignment, not stacked on it, so temper the prior sharply -- and check n_bn_adapted is nonzero before reading a null result."
+    }
+  ]
+}

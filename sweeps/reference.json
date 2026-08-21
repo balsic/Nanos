@@ -1,0 +1,190 @@
+{
+  "name": "reference",
+  "note": "The headline cross-subject table: the encoder against every reference architecture, on one identical recipe, Cho2017 + Euclidean Alignment, 10 paired folds. val_frac is 0.0 deliberately -- a 20% carve with final-epoch selection removes trials from training and reads on nothing, and it costs roughly 1.9 points. Every arm here pays the same recipe, so the comparison is internally valid; it is a statement about architecture under THIS recipe, not about each architecture's best achievable number.",
+  "base": {
+    "datasets": [
+      "cho2017"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "align_scope": "subject",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0
+  },
+  "datasets": [
+    [
+      "cho2017"
+    ]
+  ],
+  "seeds": [0, 1, 2, 3, 4],
+  "folds": 10,
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1
+        }
+      },
+      "prediction": "the unmodified trunk; the reference every other arm is paired against"
+    },
+    {
+      "name": "ours_norm",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        }
+      },
+      "prediction": "+1 to +2 over ours. Adding the one component every reference architecture has and this trunk lacks; it also unlocks test-time BN adaptation, which no-normalization forecloses entirely."
+    },
+    {
+      "name": "ours_norm_samepad",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "same_padding": true
+        }
+      },
+      "prediction": "small further gain. Removes a real defect: the two branches emit different lengths and one is resampled onto the other, so index t means a different latency in each half of the embedding."
+    },
+    {
+      "name": "ours_multiscale",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "channels_per_group": 1,
+          "kernel_sizes": [
+            15,
+            31,
+            63,
+            125
+          ],
+          "same_padding": true,
+          "norm": "batch",
+          "spatial_filter": 88,
+          "branch2_stride": 1
+        }
+      },
+      "prediction": "the largest single architectural gain. The trunk spans its scale range by dilation alone and has nothing short; four explicit kernels is the front end of the arm that currently beats it."
+    },
+    {
+      "name": "ours_attn",
+      "flags": {
+        "arm": "ours",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        }
+      },
+      "prediction": "near parity. Attention costs accuracy when training data is scarce and turns mildly positive at this cohort size; 690 tokens for a sequence that is ~99% redundant is the reason it is not more."
+    },
+    {
+      "name": "eegnet",
+      "flags": {
+        "arm": "eegnet"
+      },
+      "prediction": "the arm to beat; ~2k parameters"
+    },
+    {
+      "name": "msvtnet",
+      "flags": {
+        "arm": "msvtnet"
+      },
+      "prediction": "currently the strongest baseline on this cell"
+    },
+    {
+      "name": "shallow",
+      "flags": {
+        "arm": "shallow"
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "ctnet",
+      "flags": {
+        "arm": "ctnet"
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "conformer",
+      "flags": {
+        "arm": "conformer"
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "atcnet",
+      "flags": {
+        "arm": "atcnet"
+      },
+      "prediction": "below its published figure; the published LOSO number is best-epoch-on-test"
+    },
+    {
+      "name": "sccnet",
+      "flags": {
+        "arm": "sccnet"
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "eegnex",
+      "flags": {
+        "arm": "eegnex"
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "sstdpn",
+      "flags": {
+        "arm": "sstdpn"
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "attentionbase",
+      "flags": {
+        "arm": "attentionbase"
+      },
+      "prediction": "small; ~3.5k parameters"
+    },
+    {
+      "name": "riemann",
+      "flags": {
+        "arm": "riemann"
+      },
+      "prediction": "strong within-subject, weak across subjects: the tangent space is taken around a subject-specific reference"
+    },
+    {
+      "name": "null",
+      "flags": {
+        "arm": "eegnet",
+        "null": true
+      },
+      "prediction": "must land inside the chance band. Anything else means labels leak, and no other row in this table can be trusted."
+    }
+  ]
+}

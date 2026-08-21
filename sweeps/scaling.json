@@ -1,0 +1,124 @@
+{
+  "name": "scaling",
+  "note": "Does more data actually help? The prior answer on this cohort is 'up to about 30 subjects, then it degrades' -- naive pooling saturates and turns over, and a reference architecture declined on the identical pooled data by MORE than this encoder did, which is the argument that the turnover is the cohort rather than the architecture. Alignment roughly halved the giveback, which is why this sweep varies cohort size and alignment TOGETHER: the question is not 'does more data help' but 'how much heterogeneity can alignment absorb'. KNOWN CONFOUND, stated rather than hidden: the union montage grows 22 -> 134 channels across these six cohorts, so subject count, trial count and input width all increase together and the raw curve cannot attribute the effect to any one of them. `spatial_filter` is held at 88 deliberately -- that keeps the mixer's OUTPUT width and everything downstream of it identical across arms, so the only thing that varies is the mixer's input width (C x 88 parameters, 1,936 -> 11,792), which is inherent to pooling more montages and cannot be removed without restricting to a common montage. Scaling the filter with C instead would vary downstream capacity too, which is worse. Read a DECLINE here as evidence about heterogeneity; do not read a RISE as evidence about subject count alone -- for that, use the trials-matched arm via store.load_cohort(trials_per_subject=...).",
+  "base": {
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "montage": "union",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "arm": "ours_noattn",
+    "arm_cfg": {
+      "spatial_filter": 88,
+      "kernel_size": 32,
+      "branch2_stride": 1,
+      "norm": "instance"
+    },
+    "epochs": 150,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "align": "euclid"
+  },
+  "datasets": [
+    [
+      "bnci2014_001"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004",
+      "zhou2016",
+      "weibo2014"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004",
+      "zhou2016",
+      "weibo2014",
+      "cho2017"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004",
+      "zhou2016",
+      "weibo2014",
+      "cho2017",
+      "liu2024"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004",
+      "zhou2016",
+      "weibo2014",
+      "cho2017",
+      "liu2024",
+      "schirrmeister2017",
+      "kumar2024",
+      "wairagkar2018"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004",
+      "zhou2016",
+      "weibo2014",
+      "cho2017",
+      "liu2024",
+      "schirrmeister2017",
+      "kumar2024",
+      "wairagkar2018",
+      "dreyer2023"
+    ],
+    [
+      "bnci2014_001",
+      "bnci2014_004",
+      "zhou2016",
+      "weibo2014",
+      "cho2017",
+      "liu2024",
+      "schirrmeister2017",
+      "kumar2024",
+      "wairagkar2018",
+      "dreyer2023",
+      "physionet_mi"
+    ]
+  ],
+  "seeds": [
+    0
+  ],
+  "folds": 10,
+  "overridable": [
+    "align",
+    "trials_per_subject",
+    "arm"
+  ],
+  "arms": [
+    {
+      "name": "ours_ea",
+      "flags": {
+        "align": "euclid"
+      },
+      "prediction": "rises to ~30 subjects then gives back roughly half of what the unaligned curve gives back"
+    },
+    {
+      "name": "ours_noalign",
+      "flags": {
+        "align": "none"
+      },
+      "prediction": "the control that makes the aligned curve readable: the turnover should be roughly twice as steep"
+    },
+    {
+      "name": "eegnet_ea",
+      "flags": {
+        "align": "euclid",
+        "arm": "eegnet"
+      },
+      "prediction": "declines over the same step. If a different architecture declines in the same direction on the same cohort, the turnover is the data and not the model -- run this or the claim is unsupported."
+    }
+  ]
+}

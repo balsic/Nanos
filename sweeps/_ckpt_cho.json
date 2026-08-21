@@ -1,0 +1,102 @@
+{
+  "name": "ckpt_cho",
+  "note": "The headline cross-subject table: the encoder against every reference architecture, on one identical recipe, Cho2017 + Euclidean Alignment, 10 paired folds. val_frac is 0.0 deliberately -- a 20% carve with final-epoch selection removes trials from training and reads on nothing, and it costs roughly 1.9 points. Every arm here pays the same recipe, so the comparison is internally valid; it is a statement about architecture under THIS recipe, not about each architecture's best achievable number.",
+  "base": {
+    "datasets": [
+      "cho2017"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "align_scope": "subject",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0
+  },
+  "datasets": [
+    [
+      "cho2017"
+    ]
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "folds": 10,
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "the unmodified trunk; the reference every other arm is paired against"
+    },
+    {
+      "name": "ours_norm",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "+1 to +2 over ours. Adding the one component every reference architecture has and this trunk lacks; it also unlocks test-time BN adaptation, which no-normalization forecloses entirely."
+    },
+    {
+      "name": "ours_norm_samepad",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "same_padding": true
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "small further gain. Removes a real defect: the two branches emit different lengths and one is resampled onto the other, so index t means a different latency in each half of the embedding."
+    },
+    {
+      "name": "ours_multiscale",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "channels_per_group": 1,
+          "kernel_sizes": [
+            15,
+            31,
+            63,
+            125
+          ],
+          "same_padding": true,
+          "norm": "batch",
+          "spatial_filter": 88,
+          "branch2_stride": 1
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "the largest single architectural gain. The trunk spans its scale range by dilation alone and has nothing short; four explicit kernels is the front end of the arm that currently beats it."
+    }
+  ]
+}

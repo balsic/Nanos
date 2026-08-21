@@ -1,0 +1,47 @@
+{
+  "name": "transfer",
+  "note": "DOES ADDING SUBJECTS TO TRAINING HELP A FIXED POPULATION? This is the corrected form of sweeps/nopool.json, and the correction matters more than the sweep. In nopool, growing the cohort moved the training set AND the test set together, so the pooled mean absorbed whatever difficulty the new corpora brought: it fell 66.6 -> 60.2 -> 57.1 while cho2017's own subjects held at 66.5 / 66.1 / 66.6. Nothing had degraded; the metric had changed what it averaged over. liu2024 scores 54 (only 40 trials per subject) and wairagkar2018 scores 45, and mixing them into the evaluation set looks exactly like a model getting worse. Here `test_datasets` pins evaluation to cho2017's 52 subjects for EVERY row, so the same people are scored every time and the only thing that changes is how many other people the model trained on -- 0 extra, then 50, 24, 18, 14, 87, 109. A rise is transfer. Flatness means extra subjects from other corpora buy nothing for this population, which would be the real finding and would point at per-corpus adapters or a montage-agnostic front end rather than at more downloads. Electrodes are pinned to the 9-channel 10-20 subset at 100% occupancy throughout, so montage dilution is absent by construction.",
+  "base": {
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "montage": "shared",
+    "channels": ["C3", "C4", "Cz", "F3", "F4", "Fz", "P3", "P4", "Pz"],
+    "test_datasets": ["cho2017"],
+    "regime": "transductive",
+    "norm": "per-subject",
+    "align": "euclid",
+    "arm": "ours_noattn",
+    "arm_cfg": {"spatial_filter": 36, "kernel_size": 32, "branch2_stride": 1, "norm": "batch"},
+    "epochs": 150,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "folds": 10
+  },
+  "datasets": [
+    ["cho2017"],
+    ["cho2017", "liu2024"],
+    ["cho2017", "liu2024", "weibo2014", "wairagkar2018"],
+    ["cho2017", "liu2024", "weibo2014", "wairagkar2018", "kumar2024"],
+    ["cho2017", "liu2024", "weibo2014", "wairagkar2018", "kumar2024", "schirrmeister2017"],
+    ["cho2017", "liu2024", "weibo2014", "wairagkar2018", "kumar2024", "schirrmeister2017", "dreyer2023"],
+    ["cho2017", "liu2024", "weibo2014", "wairagkar2018", "kumar2024", "schirrmeister2017", "dreyer2023", "physionet_mi"]
+  ],
+  "seeds": [0],
+  "folds": 10,
+  "overridable": ["arm", "arm_cfg"],
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {},
+      "prediction": "The honest prior is FLAT. nopool already showed cho2017 unmoved (66.46 / 66.06 / 66.56) while 74 subjects were added to training, and those are the first three points of this very curve read per-corpus. If that holds out to +302 subjects, then cross-corpus subjects do not transfer to this population under a shared trunk, and the data plan should stop buying subjects and start buying a front end that can use them."
+    },
+    {
+      "name": "eegnet",
+      "flags": {"arm": "eegnet", "arm_cfg": {}},
+      "prediction": "Same shape. The attribution control: if a 2k-parameter reference architecture also fails to convert extra subjects into accuracy on a fixed population, the limit is the data relationship rather than this encoder's capacity."
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "name": "ssvep_spectral",
+  "note": "Does the encoder's SPECTRAL branch close the SSVEP deficit? The trunk is 18.9 points behind ATCNet and EEGNet on SSVEP -- its worst result anywhere -- and the mechanism account says why: multi-scale dilated convolution is a prior for transient structure at several timescales, and SSVEP is stationary narrowband entrainment where every timepoint carries identical information. The encoder already contains a per-channel STFT branch built for exactly that signal class, and it is DISABLED in every arm reported so far. n_fft matters and is not a free parameter: the 12 stimulation frequencies are spaced 0.5 Hz apart (9.25-14.75 Hz), so at 250 Hz an n_fft of 256 gives 0.98 Hz resolution and CANNOT separate adjacent classes, while 512 gives 0.49 Hz and can. Including the 256 arm makes that a measurement rather than an assertion. This is the test the mechanism account predicts: if the deficit is the wrong temporal prior, supplying an explicit frequency view should close much of it; if it does not, the account is incomplete and the deficit stands as reported.",
+  "base": {
+    "datasets": [
+      "nakanishi2015"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "ssvep",
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0,
+    "folds": 9
+  },
+  "datasets": [
+    [
+      "nakanishi2015"
+    ]
+  ],
+  "seeds": [0, 1, 2, 3, 4],
+  "folds": 9,
+  "overridable": [
+    "arm",
+    "arm_cfg"
+  ],
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        }
+      },
+      "prediction": "the reported baseline, 74.75; re-run in-sweep so the delta is paired here"
+    },
+    {
+      "name": "ours_spec512",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "spectral": true,
+          "n_fft": 512
+        }
+      },
+      "prediction": "THE arm. 0.49 Hz resolution separates the 0.5 Hz class spacing. Predict +10 or more toward EEGNet's 93.09. Falsified if it lands within noise of 74.75, which would mean the deficit is not the missing frequency view."
+    },
+    {
+      "name": "ours_spec256",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "spectral": true,
+          "n_fft": 256
+        }
+      },
+      "prediction": "0.98 Hz resolution CANNOT separate adjacent classes. Predict clearly below spec512 -- this arm exists to show the gain is frequency resolution rather than merely extra parameters."
+    },
+    {
+      "name": "ours_spec512_attn",
+      "flags": {
+        "arm": "ours",
+        "arm_cfg": {
+          "spatial_filter": 24,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "spectral": true,
+          "n_fft": 512
+        }
+      },
+      "prediction": "attention was -20.25 here. If the spectral branch supplies a stationary frequency view, attention has even less to select and should still hurt."
+    },
+    {
+      "name": "eegnet",
+      "flags": {
+        "arm": "eegnet",
+        "arm_cfg": {}
+      },
+      "prediction": "93.09, the target"
+    },
+    {
+      "name": "atcnet",
+      "flags": {
+        "arm": "atcnet",
+        "arm_cfg": {}
+      },
+      "prediction": "93.64, the best on this cell"
+    }
+  ]
+}

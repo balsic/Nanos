@@ -1,0 +1,35 @@
+{
+  "name": "dropout",
+  "note": "THE OPERATING POINT, which precedes every architecture question. Measured [here]: a trunk feature passes TWO Dropout1d(p=0.5) in series -- encoder_one.2 and encoder.dropout -- giving net trunk keep (1-p)^2 = 0.25, and 0.1875 including the 0.25 head dropout. `grep '\"dropout\"' sweeps/*.json` returns nothing, so EVERY arm ever run in this repo trains at that setting, including the -2.19 vs EEGNet. EEGNet's own reference is 0.25 applied ONCE, i.e. net keep 0.75 -- four times more signal reaching the head. Two sweeps downstream are unreadable until this is settled: `spatial` asks a CAPACITY question ('does an over-complete unconstrained mixer overfit subjects?') which cannot be answered while the model is simultaneously regularised to 10x that noise level, and `fairness` would defend our champion at p=0.5 against EEGNet at its author's setting, which is asymmetric by construction. ENDPOINTS ONLY, deliberately: p in {0.5, 0.0} maps to net trunk keep {0.25, 1.0}, and if those two do not separate by more than the noise floor then the interior is not worth buying. PRE-REGISTERED SELECTION RULE: this cell has val_frac=0.0, so there is NO validation set and taking the argmax of a curve would be selection on test against 4.73 [prior] measured points of pure selection noise. If the endpoints separate, the pick is the external convention -- EEGNet-matched net keep 0.75, i.e. p = 1-sqrt(0.75) ~ 0.134 -- and the whole curve is reported as evidence rather than a winner. A PEAK AT 0.5 IS NOT A NULL: it would say the trunk needs 10x-noise regularisation to avoid memorising subjects, which is a capacity indictment and promotes `spatial` to first.",
+  "base": {
+    "datasets": ["cho2017"],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "arm": "ours_noattn",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0,
+    "folds": 10
+  },
+  "datasets": [["cho2017"]],
+  "seeds": [0],
+  "folds": 10,
+  "overridable": ["arm_cfg"],
+  "arms": [
+    {"name": "p50", "flags": {"arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "dropout": 0.5}},
+     "prediction": "the as-run setting every existing result uses; net trunk keep 0.25. The reference the other endpoint is paired against."},
+    {"name": "p00", "flags": {"arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "dropout": 0.0}},
+     "prediction": "+2 to +5 over p50. Direction is NOT guaranteed: 0.5 may be doing real cross-subject regularisation that it was not doing in the subject-dependent cell where the -10.6 [prior] was measured. Falsified if |delta| < 1.5 with fewer than 7/10 folds moving one way."},
+    {"name": "p13", "flags": {"arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "dropout": 0.134}},
+     "prediction": "net trunk keep 0.75, matching EEGNet's convention. Included now rather than later only because it is 10 jobs and makes the curve readable in one pass; it is NOT to be selected by argmax."}
+  ]
+}

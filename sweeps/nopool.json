@@ -1,0 +1,116 @@
+{
+  "name": "nopool",
+  "note": "DOES MORE DATA HELP, once dilution is removed? The prior scaling curve turned over past ~30 subjects on a UNION montage, where absent electrodes are zero-filled -- at the full cohort that is 136 electrodes at 32% occupancy, so two thirds of the input tensor is structural zero and the spatial mixer has to learn around a mask that changes per trial. That is a property of the pooling mechanism, not of subject count, and the objection that more data should not hurt is well founded. This sweep removes the mechanism: `channels` is pinned to the 9-electrode 10-20 subset (C3 C4 Cz F3 F4 Fz P3 P4 Pz) that all eight corpora physically record, so EVERY cohort below has 100% occupancy and ZERO structural zeros. Electrodes are fixed, trial length is fixed, recipe is fixed; only the number of people changes, 52 -> 354. If the curve now rises monotonically, the turnover was dilution and the union montage should be abandoned. If it still turns over, the cause is population/hardware heterogeneity and the fix is domain-level, not montage-level -- either way the answer is attributable, which the union-montage curve could never be.",
+  "base": {
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "montage": "shared",
+    "channels": [
+      "C3",
+      "C4",
+      "Cz",
+      "F3",
+      "F4",
+      "Fz",
+      "P3",
+      "P4",
+      "Pz"
+    ],
+    "regime": "transductive",
+    "norm": "per-subject",
+    "align": "euclid",
+    "arm": "ours_noattn",
+    "arm_cfg": {
+      "spatial_filter": 36,
+      "kernel_size": 32,
+      "branch2_stride": 1,
+      "norm": "batch"
+    },
+    "epochs": 150,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final"
+  },
+  "datasets": [
+    [
+      "cho2017"
+    ],
+    [
+      "cho2017",
+      "liu2024"
+    ],
+    [
+      "cho2017",
+      "liu2024",
+      "weibo2014",
+      "wairagkar2018"
+    ],
+    [
+      "cho2017",
+      "liu2024",
+      "weibo2014",
+      "wairagkar2018",
+      "kumar2024"
+    ],
+    [
+      "cho2017",
+      "liu2024",
+      "weibo2014",
+      "wairagkar2018",
+      "kumar2024",
+      "schirrmeister2017"
+    ],
+    [
+      "cho2017",
+      "liu2024",
+      "weibo2014",
+      "wairagkar2018",
+      "kumar2024",
+      "schirrmeister2017",
+      "dreyer2023"
+    ],
+    [
+      "cho2017",
+      "liu2024",
+      "weibo2014",
+      "wairagkar2018",
+      "kumar2024",
+      "schirrmeister2017",
+      "dreyer2023",
+      "physionet_mi"
+    ]
+  ],
+  "seeds": [
+    0
+  ],
+  "folds": 10,
+  "overridable": [
+    "align",
+    "arm",
+    "arm_cfg"
+  ],
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {},
+      "prediction": "Monotone increase 52 -> 354 subjects, or at worst a plateau. The spatial mixer is 9 -> 36 and every one of its inputs carries real signal in every trial, so the mechanism blamed for the previous turnover is absent by construction. A turnover here would be a genuinely different finding and would point at population heterogeneity."
+    },
+    {
+      "name": "eegnet",
+      "flags": {
+        "arm": "eegnet",
+        "arm_cfg": {}
+      },
+      "prediction": "Same shape as `ours`. This is the control that decides attribution: if BOTH architectures turn over on identical data, the cause is the cohort; if only one does, it is the architecture. Running the arm without its control is the error this project has already made and corrected twice."
+    },
+    {
+      "name": "ours_noalign",
+      "flags": {
+        "align": "none"
+      },
+      "prediction": "Lower throughout, and turning over sooner. Alignment was measured to roughly halve the giveback on the union curve; with dilution removed, whatever gap remains between this and `ours` is what alignment is actually buying against population heterogeneity alone."
+    }
+  ]
+}

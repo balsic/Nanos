@@ -1,0 +1,159 @@
+{
+  "name": "bci2a_within",
+  "note": "THE standard BCI IV 2a cell: session 1 trains, session 2 tests, per subject, 4-class, 288/288 trials. This is the protocol nearly every published 2a number uses, and it is the cell where this trunk was measured at 65.90 against EEGNet's 59.14 -- +6.8 -- in a predecessor harness. It has never been run in this harness. Two reasons it matters beyond convention: (a) reviewers expect 2a, and Cho2017 alone is a single-dataset result; (b) 4 classes give the encoder's extra capacity more label structure to use than the 2-class cell where it currently ties.",
+  "base": {
+    "datasets": [
+      "bnci2014_001"
+    ],
+    "protocol": "holdout-session",
+    "paradigm": "motor_imagery",
+    "tmin": 0.5,
+    "tmax": 3.5,
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0,
+    "folds": 9
+  },
+  "datasets": [
+    [
+      "bnci2014_001"
+    ]
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "folds": 9,
+  "overridable": [
+    "arm",
+    "arm_cfg"
+  ],
+  "arms": [
+    {
+      "name": "ours",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "the published trunk, as measured on Cho2017"
+    },
+    {
+      "name": "ours_decim",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "pool_kernel": 8,
+          "pool_stride": 8
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "decimated to ~74 tokens, no attention -- the control for the arm below"
+    },
+    {
+      "name": "ours_decim_attn",
+      "flags": {
+        "arm": "ours",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch",
+          "pool_kernel": 8,
+          "pool_stride": 8
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "the best configuration found on Cho2017 (71.94, +1.61 over its control). Replication target: attention should again be positive on a short sequence. This is the arm the token-budget claim lives or dies on -- a second dataset, second class count, second protocol."
+    },
+    {
+      "name": "ours_attn_565",
+      "flags": {
+        "arm": "ours",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        },
+        "checkpoint_dir": "checkpoints/seeds5"
+      },
+      "prediction": "attention at the PUBLISHED token budget, so the difference-in-differences can be computed within this dataset rather than borrowed from Cho2017"
+    },
+    {
+      "name": "eegnet",
+      "flags": {
+        "arm": "eegnet",
+        "arm_cfg": {}
+      },
+      "prediction": "the reference"
+    },
+    {
+      "name": "msvtnet",
+      "flags": {
+        "arm": "msvtnet",
+        "arm_cfg": {}
+      },
+      "prediction": "the strongest baseline on Cho2017"
+    },
+    {
+      "name": "shallow",
+      "flags": {
+        "arm": "shallow",
+        "arm_cfg": {}
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "atcnet",
+      "flags": {
+        "arm": "atcnet",
+        "arm_cfg": {}
+      },
+      "prediction": "designed for this exact dataset; its published 2a number is best-epoch-on-test"
+    },
+    {
+      "name": "ctnet",
+      "flags": {
+        "arm": "ctnet",
+        "arm_cfg": {}
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "sccnet",
+      "flags": {
+        "arm": "sccnet",
+        "arm_cfg": {}
+      },
+      "prediction": "mid-table"
+    },
+    {
+      "name": "null",
+      "flags": {
+        "arm": "eegnet",
+        "arm_cfg": {},
+        "null": true
+      },
+      "prediction": "must land inside the 4-class chance band (25%)"
+    }
+  ]
+}

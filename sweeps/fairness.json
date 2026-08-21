@@ -1,0 +1,51 @@
+{
+  "name": "fairness",
+  "note": "BASELINE RECIPE FAIRNESS -- the sweep that protects any claim of near-SoTA. Every arm in sweeps/reference.json trains through one identical loop. That is the right choice for ATTRIBUTION, because it isolates architecture, but it is NOT each baseline's best achievable number, and a win obtained that way is home-field advantage rather than state of the art. The asymmetry is what matters: if a baseline beats us under OUR recipe, that is a genuine loss with no excuse available, because we chose the recipe. If we beat it under our recipe, the claim is only as strong as the recipe was fair to it. This project has the precedent -- EEGNet scored 59.14 subject-dependent in the previous harness, far below its published range, which means the schedule and not the architecture was doing the talking. So: give the two strongest baselines several plausible recipes each, take each one's BEST, and pair our champion against that. Beating a baseline at its own best is the only version of this comparison that survives review. `epochs`, `lr`, `batch_size`, `weight_decay`, `label_smoothing` and `scheduler` are declared overridable because varying them IS the experiment; every other field stays fixed, and each arm still sees identical folds so the pairing holds.",
+  "base": {
+    "datasets": ["cho2017"],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "tmin": 0.5,
+    "tmax": 3.0,
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 150,
+    "batch_size": 64,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "label_smoothing": 0.0,
+    "scheduler": "onecycle",
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final",
+    "patience": 0
+  },
+  "datasets": [["cho2017"]],
+  "seeds": [0],
+  "folds": 10,
+  "overridable": ["epochs", "lr", "batch_size", "weight_decay", "label_smoothing", "scheduler", "arm", "arm_cfg"],
+  "arms": [
+    {"name": "eegnet_r1", "flags": {"arm": "eegnet"},
+     "prediction": "the shared recipe; identical to reference.json's eegnet row"},
+    {"name": "eegnet_r2", "flags": {"arm": "eegnet", "lr": 0.002, "epochs": 300, "scheduler": "onecycle"},
+     "prediction": "longer schedule at a higher peak LR; EEGNet is small enough that 150 epochs may simply undertrain it"},
+    {"name": "eegnet_r3", "flags": {"arm": "eegnet", "lr": 0.001, "epochs": 500, "scheduler": "none", "weight_decay": 0.0},
+     "prediction": "the closest thing to the original paper's regime: flat LR, long, no decay"},
+    {"name": "eegnet_r4", "flags": {"arm": "eegnet", "batch_size": 32, "lr": 0.0005, "epochs": 300, "label_smoothing": 0.1},
+     "prediction": "smaller batches and label smoothing; the combination most often reported to help compact EEG CNNs"},
+
+    {"name": "msvtnet_r1", "flags": {"arm": "msvtnet"},
+     "prediction": "the shared recipe; the strongest baseline on the prior Cho2017+EA table at 71.35"},
+    {"name": "msvtnet_r2", "flags": {"arm": "msvtnet", "lr": 0.002, "epochs": 300},
+     "prediction": "transformers in this family usually want more epochs than a compact CNN"},
+    {"name": "msvtnet_r3", "flags": {"arm": "msvtnet", "batch_size": 32, "lr": 0.0005, "epochs": 300, "label_smoothing": 0.1}, "prediction": ""},
+
+    {"name": "ours_r1", "flags": {"arm": "ours_noattn", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "same_padding": true}},
+     "prediction": "our champion under the shared recipe. If it does not beat the BEST row of each baseline family above, we are not near state of the art and should say so plainly."},
+    {"name": "ours_r2", "flags": {"arm": "ours_noattn", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "same_padding": true}, "lr": 0.002, "epochs": 300},
+     "prediction": "our own recipe search, run at the same budget the baselines get -- giving ourselves more tuning than them would be the same error in reverse"},
+    {"name": "ours_r3", "flags": {"arm": "ours_noattn", "arm_cfg": {"channels_per_group": 1, "kernel_sizes": [15, 31, 63, 125], "same_padding": true, "norm": "batch", "spatial_filter": 88, "branch2_stride": 1}, "lr": 0.002, "epochs": 300},
+     "prediction": "multi-scale front end plus the longer schedule; the configuration with the largest prior of anything we have"}
+  ]
+}

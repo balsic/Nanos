@@ -1,0 +1,20 @@
+{
+  "name": "decim_attn",
+  "note": "The one configuration the reshape ladder pointed at and did not contain. Corrected for the sweep's own confound (base had no normalization; decim/deep did), the ladder decomposes as: decimation alone +0.45 (8/10, p=0.16), stage-2 depth alone -1.74 (3/10, p=0.065), attention at 10 tokens +1.16 (7/10, p=0.23). Depth is the only step that costs, and attention does not repay it -- so deep_attn lands at 69.76, below plain base at 70.67. This arm removes the expensive step and keeps the two that pay: decimate to 74 tokens WITHOUT stage-2 depth, attention on. If the token-budget mechanism is what makes attention work, 74 tokens is already far inside the regime every published conv-transformer occupies (ATCNet 13, CTNet 15, MSVTNet 18, Conformer 61), and no depth penalty is incurred. Pre-registered: decim_attn > decim by roughly the +1.16 measured at 10 tokens, putting it near or above base at 70.67. Falsified if it lands at or below decim (70.33), which would mean attention needs the 10-token budget specifically rather than merely a non-redundant one.",
+  "base": {
+    "datasets": ["cho2017"], "protocol": "cross-subject", "paradigm": "leftright",
+    "tmin": 0.5, "tmax": 3.0, "align": "euclid", "regime": "transductive",
+    "norm": "per-subject", "epochs": 150, "batch_size": 64, "lr": 0.001,
+    "val_frac": 0.0, "val_subjects": 0, "select": "final", "patience": 0, "folds": 10
+  },
+  "datasets": [["cho2017"]],
+  "seeds": [0],
+  "folds": 10,
+  "overridable": ["arm", "arm_cfg"],
+  "arms": [
+    {"name": "decim_attn", "flags": {"arm": "ours", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "pool_kernel": 8, "pool_stride": 8}},
+     "prediction": "74 tokens, attention ON, no stage-2 depth. Expect ~+1 over decim (70.33), i.e. near or above base (70.67). This is the arm that decides whether the mechanism converts into an accuracy result."},
+    {"name": "decim_ctl", "flags": {"arm": "ours_noattn", "arm_cfg": {"spatial_filter": 88, "kernel_size": 32, "branch2_stride": 1, "norm": "batch", "pool_kernel": 8, "pool_stride": 8}},
+     "prediction": "its matched control, re-run in-sweep so the attention delta is paired within one results directory rather than across two."}
+  ]
+}

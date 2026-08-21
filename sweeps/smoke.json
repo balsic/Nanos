@@ -1,0 +1,57 @@
+{
+  "name": "smoke",
+  "note": "Tiny end-to-end check of the runner: 3 arms x 2 folds on the 4-subject corpus, 3 epochs. Not a result -- it verifies dispatch, resume, shard merging and the paired table.",
+  "base": {
+    "datasets": [
+      "zhou2016"
+    ],
+    "protocol": "cross-subject",
+    "paradigm": "leftright",
+    "align": "euclid",
+    "regime": "transductive",
+    "norm": "per-subject",
+    "epochs": 3,
+    "val_frac": 0.0,
+    "val_subjects": 0,
+    "select": "final"
+  },
+  "datasets": [
+    [
+      "zhou2016"
+    ]
+  ],
+  "seeds": [
+    0
+  ],
+  "folds": 2,
+  "arms": [
+    {
+      "name": "ours_noattn",
+      "flags": {
+        "arm": "ours_noattn",
+        "arm_cfg": {
+          "spatial_filter": 88,
+          "kernel_size": 32,
+          "branch2_stride": 1,
+          "norm": "batch"
+        }
+      },
+      "prediction": "reference arm for this smoke test; no prediction, it is 3 epochs"
+    },
+    {
+      "name": "eegnet",
+      "flags": {
+        "arm": "eegnet"
+      },
+      "prediction": "no prediction at 3 epochs"
+    },
+    {
+      "name": "null",
+      "flags": {
+        "arm": "eegnet",
+        "null": true
+      },
+      "prediction": "must land inside the chance band; anything else means the labels leak"
+    }
+  ]
+}
